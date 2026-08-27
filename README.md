@@ -6,6 +6,7 @@ LANCE-seq (Live-tissue Analysis via Needle-encoded Capture Extraction sequencing
 
 ## Repository structure
 
+- `FASTQ_preprocessing/` — custom Read 1 barcode/UMI extraction and Read 2 trimming scripts used before STARsolo processing.
 - `Figure 3/` — mouse brain cell-type deconvolution using cell2location (Fig. 3h)
 - `Figure 4/` — pseudobulk transcriptomic analyses for the liver longitudinal-sampling experiment (Fig. 4f–i)
 - `Figure 5/` — longitudinal APAP-response, liver zonation, functional-module, and spatial-autocorrelation analyses (Fig. 5 and Supplementary Figs. S5–S10)
