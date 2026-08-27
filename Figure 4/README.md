@@ -4,9 +4,9 @@ Code used to generate the transcriptomic analyses shown in Figure 4f–i of the 
 
 ## Files
 
-- `LANCE-seq_Figure4_Final.ipynb` — main analysis notebook
+- `LANCE-seq_Figure4.ipynb` — main analysis notebook
 - `figure4_utils.py` — helper functions for plotting and file output
-- `outputs/` — generated figure files
+
 
 ## Input
 
@@ -20,7 +20,7 @@ The input and output paths are defined in the configuration cell at the beginnin
 
 ## Run
 
-Open `LANCE-seq_Figure4_Final.ipynb` in the Scanpy environment and run all cells from top to bottom.
+Open `LANCE-seq_Figure4.ipynb` in the Scanpy environment and run all cells from top to bottom.
 
 Main dependencies:
 
