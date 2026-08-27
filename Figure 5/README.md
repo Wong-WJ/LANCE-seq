@@ -2,10 +2,9 @@
 
 ## Files
 
-- `LANCE-seq_Figure5_Final.ipynb` — transparent, top-to-bottom analysis notebook.
+- `LANCE-seq_Figure5.ipynb` — complete Figure 5 analysis notebook.
 - `figure5_utils.py` — small reusable plotting and mathematical helpers; all core scientific calculations remain visible in the notebook.
-- `outputs/` — the 18 manuscript PNG panels.
-
+- `data/` — GO and KEGG enrichment tables used by the notebook.
 ## Inputs
 
 - AnnData path: set `INPUT_H5AD` in the configuration cell.
@@ -16,7 +15,7 @@ The h5ad must contain count-like `X`, `obs['batch']`, and `obsm['spatial']`.
 
 ## Run
 
-Open `LANCE-seq_Figure5_Final.ipynb`, restart the kernel, and run all cells from top to bottom. The notebook recreates the output directory and produces exactly the 18 PNG files listed below.
+Open `LANCE-seq_Figure5.ipynb`, restart the kernel, and run all cells from top to bottom. The notebook recreates the output directory and produces exactly the 18 PNG files listed below.
 
 ## Key methods
 
