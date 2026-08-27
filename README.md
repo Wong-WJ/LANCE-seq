@@ -17,7 +17,7 @@ Each folder contains its own README with analysis-specific inputs, methods, and 
 
 Raw sequencing data generated in this study have been deposited in the Genome Sequence Archive (GSA), National Genomics Data Center. The accession number will be added here after assignment.
 
-Processed spatial transcriptomic count matrices, spatial barcode/coordinate files, and analysis-ready datasets will be deposited separately and linked here.
+Processed spatial transcriptomic data, including expression matrices, spot metadata, and spatial coordinates in AnnData format, are available at Zenodo under DOI https://doi.org/10.5281/zenodo.22121908.
 
 The mouse whole-brain single-nucleus RNA-seq reference dataset used for cell-type deconvolution is available from ArrayExpress under accession `E-MTAB-11115`.
 
