@@ -1,66 +1,12 @@
-"""Small reusable plotting and output helpers for LANCE-seq Figure 4."""
-
-from __future__ import annotations
-
+"""Plot/export helpers for Figure 4. / 图4绘图与导出辅助函数。"""
 from pathlib import Path
-
-import matplotlib
-
-matplotlib.use("Agg")
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap, PowerNorm
 from matplotlib.patches import Ellipse
 import numpy as np
 import pandas as pd
-import seaborn as sns
 
-
-EXPECTED_FILES = [
-    "Fig4_5A_Pseudobulk_PCA_PC1_PC2.png",
-    "Fig4_5B_6module_heatmap.png",
-    "Fig4_6A3_MN2_MN4_expression_agreement_labeled.png",
-    "Fig4_6B3_APAP_injury_module_comparison.png",
-]
-
-
-def configure_style() -> None:
-    """Apply the common Figure 4 plotting style."""
-    mpl.rcParams.update(
-        {
-            "font.family": "Arial",
-            "font.weight": "normal",
-            "axes.labelweight": "normal",
-            "axes.titleweight": "normal",
-            "text.color": "black",
-            "axes.labelcolor": "black",
-            "axes.edgecolor": "black",
-            "axes.linewidth": 0.8,
-            "figure.facecolor": "white",
-            "axes.facecolor": "white",
-            "pdf.fonttype": 42,
-            "ps.fonttype": 42,
-        }
-    )
-    sns.set_theme(style="white", font="Arial")
-
-
-def prepare_output_dir(output_dir: str | Path) -> Path:
-    """Create the output folder and clear stale PNG files."""
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    for path in output_dir.glob("*.png"):
-        path.unlink()
-    return output_dir
-
-
-def save_png(fig: mpl.figure.Figure, output_dir: str | Path, filename: str) -> Path:
-    """Save one publication PNG with the shared export settings."""
-    path = Path(output_dir) / filename
-    fig.savefig(path, dpi=600, bbox_inches="tight", facecolor="white")
-    plt.close(fig)
-    return path
-
+EXPECTED_STEMS = ['Fig4F_Pseudobulk_PCA', 'Fig4G_Five_Module_Heatmap', 'Fig4H_Module_Gene_Changes', 'Fig4I_Gene_Difference_ECDF']
 
 def add_descriptive_ellipse(
     ax: mpl.axes.Axes,
@@ -91,47 +37,33 @@ def add_descriptive_ellipse(
     )
 
 
-def density_values(
-    x: np.ndarray, y: np.ndarray
-) -> tuple[np.ndarray, PowerNorm, LinearSegmentedColormap]:
-    """Return binned point density and its display mapping."""
-    x_pad = max(np.ptp(x) * 0.002, 1e-9)
-    y_pad = max(np.ptp(y) * 0.002, 1e-9)
-    hist, x_edges, y_edges = np.histogram2d(
-        x,
-        y,
-        bins=180,
-        range=[
-            [x.min() - x_pad, x.max() + x_pad],
-            [y.min() - y_pad, y.max() + y_pad],
-        ],
-    )
-    x_bin = np.clip(np.searchsorted(x_edges, x, side="right") - 1, 0, 179)
-    y_bin = np.clip(np.searchsorted(y_edges, y, side="right") - 1, 0, 179)
-    density = hist[x_bin, y_bin]
-    positive = density[density > 0]
-    dmin, dmax = np.quantile(positive, [0.01, 0.99])
-    norm = PowerNorm(
-        gamma=0.60, vmin=dmin, vmax=max(dmax, dmin + 1e-12), clip=True
-    )
-    cmap = LinearSegmentedColormap.from_list(
-        "soft_density_final",
-        ["#F3F3F3", "#DCE7F2", "#AFC7DE", "#E7CBC7", "#E6B0AA", "#B9625C"],
-    )
-    return density, norm, cmap
-
-
-def output_inventory(output_dir: str | Path) -> pd.DataFrame:
-    """Summarize the four Figure 4 PNG files."""
+def prepare_output(output_dir):
+    """Create output folders without deleting existing files. / 建立目录，保留已有文件。"""
     output_dir = Path(output_dir)
-    observed = sorted(path.name for path in output_dir.glob("*.png"))
-    missing = sorted(set(EXPECTED_FILES) - set(observed))
-    extra = sorted(set(observed) - set(EXPECTED_FILES))
-    if missing or extra:
-        raise ValueError(f"Unexpected PNG inventory; missing={missing}, extra={extra}")
-    return pd.DataFrame(
-        [
-            {"filename": name, "bytes": (output_dir / name).stat().st_size}
-            for name in EXPECTED_FILES
-        ]
-    )
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "tables").mkdir(exist_ok=True)
+    return output_dir
+
+
+def save_panel(fig, output_dir, stem, *, tight=False, dpi=600):
+    """Export PNG/PDF and display a notebook preview. / 导出 PNG/PDF 并显示预览。"""
+    output_dir = Path(output_dir)
+    options = {"bbox_inches": "tight"} if tight else {}
+    fig.canvas.draw()
+    fig.savefig(output_dir / (stem + ".png"), dpi=dpi, facecolor="white", **options)
+    fig.savefig(output_dir / (stem + ".pdf"), dpi=350, facecolor="white", **options)
+    plt.show()
+    plt.close(fig)
+    return output_dir / (stem + ".png")
+
+
+def output_inventory(output_dir):
+    """Check every expected PNG and PDF. / 核对全部预期图件。"""
+    rows = []
+    for stem in EXPECTED_STEMS:
+        for extension in ("png", "pdf"):
+            path = Path(output_dir) / (stem + "." + extension)
+            if not path.is_file() or path.stat().st_size == 0:
+                raise FileNotFoundError(path)
+            rows.append({"file": path.name, "bytes": path.stat().st_size})
+    return pd.DataFrame(rows)

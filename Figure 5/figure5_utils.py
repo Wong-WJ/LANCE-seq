@@ -1,86 +1,14 @@
-"""Small reusable plotting and mathematical helpers for Figure 5."""
-
-from __future__ import annotations
-
-import textwrap
+"""Plot/export helpers for Figure 5. / 图5绘图与导出辅助函数。"""
 from pathlib import Path
 from typing import Mapping, Sequence
-
-import anndata as ad
 import matplotlib as mpl
-
-mpl.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from scipy import sparse
 from scipy.spatial import cKDTree
 
-
-EXPECTED_OUTPUTS = [
-    "Fig5B_MN2_vs_MN1_Volcano.png",
-    "Fig5C1_GO_Up.png",
-    "Fig5C2_GO_Down.png",
-    "Fig5D_APAP_Injury_Gene_Spatial_Maps_fixed.png",
-    "Fig5E_Liver_Zonation_Marker_Spatial_Maps.png",
-    "Fig5F_Relative_Zonation_3State_Spatial_Maps_fixed.png",
-    "Fig5G_ZoneStratified_Transcriptional_Effect_Sizes.png",
-    "Fig5H_APAP_Module_Response_Across_Relative_Zonation_Strata.png",
-    "FigS5A1_KEGG_Up.png",
-    "FigS5A2_KEGG_Down.png",
-    "FigS5B_APAP_Marker_Expression_Distribution_fixed.png",
-    "FigS5C_Zonation_Marker_Expression_Distribution.png",
-    "FigS5D_Relative_Zonation_Continuous_Spatial_Maps_fixed.png",
-    "FigS5E_Healthy_HeldOut_Zonation_Validation.png",
-    "FigS5G_HealthyReference_Absolute_Zonation_Program_Remodeling.png",
-    "FigS5H_Absolute_CV_Associated_Program_Spatial_Maps.png",
-    "FigS5I_ZoneStratified_Supportive_Concordance.png",
-    "FigS5J_Spatial_Autocorrelation_MoransI.png",
-]
-
-
-def configure_style(random_seed: int = 0) -> None:
-    np.random.seed(random_seed)
-    mpl.rcParams.update(
-        {
-            "font.family": "Arial",
-            "font.weight": "normal",
-            "axes.labelweight": "normal",
-            "axes.titleweight": "normal",
-            "figure.facecolor": "white",
-            "axes.facecolor": "white",
-            "axes.edgecolor": "#2F2F2F",
-            "axes.linewidth": 0.8,
-            "pdf.fonttype": 42,
-            "ps.fonttype": 42,
-            "font.size": 9,
-        }
-    )
-    sns.set_style("white")
-
-
-def prepare_output(output_dir: str | Path) -> Path:
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    for path in output_dir.glob("*.png"):
-        path.unlink()
-    return output_dir
-
-
-def save_png(output_dir: str | Path, fig: plt.Figure, filename: str) -> Path:
-    if filename not in EXPECTED_OUTPUTS:
-        raise ValueError(f"Unexpected Figure 5 filename: {filename}")
-    path = Path(output_dir) / filename
-    fig.savefig(path, dpi=600, bbox_inches="tight", facecolor="white")
-    return path
-
-
-def gene_vector(adata: ad.AnnData, gene: str) -> np.ndarray:
-    values = adata[:, gene].X
-    return values.toarray().ravel() if sparse.issparse(values) else np.asarray(values).ravel()
-
+EXPECTED_STEMS = ['Fig5B_Longitudinal_MA', 'Fig5C_GO_Up', 'Fig5D_Injury_Spatial', 'Fig5E_Injury_Distributions', 'Fig5F_CV_Reference_Spatial', 'Fig5G_Matched_Marker_Profiles', 'Fig5H_Expression_Moran_Changes', 'Fig5I_Focal_Gene_Spatial', 'FigS5A_GO_Down', 'FigS5B_KEGG_Up', 'FigS5C_KEGG_Down', 'FigS6_Section_Injury_Markers', 'FigS7A_Zonation_Marker_Spatial', 'FigS7B_Zonation_Marker_Distributions', 'FigS8A_Relative_Zonation_Spatial', 'FigS8B_Heldout_Validation', 'FigS9A_CV_Reference_Distributions', 'FigS9B_PV_Reference_Distributions', 'FigS9C_PV_Reference_Spatial']
 
 def normalize_selected(X: sparse.csr_matrix, indices: np.ndarray) -> np.ndarray:
     """Normalize selected genes to 10,000 counts per spot and apply log1p."""
@@ -96,132 +24,6 @@ def normalize_selected(X: sparse.csr_matrix, indices: np.ndarray) -> np.ndarray:
         * 1e4
     )
 
-
-def enrichment_metrics(table: pd.DataFrame) -> pd.DataFrame:
-    result = table.copy()
-    overlap = result["Overlap"].astype(str).str.extract(
-        r"(?P<hit>\d+)\s*/\s*(?P<total>\d+)"
-    ).astype(float)
-    result["Overlap_Ratio"] = overlap["hit"] / overlap["total"].replace(0, np.nan)
-    result["minus_log10_padj"] = -np.log10(
-        np.maximum(result["Adjusted P-value"].astype(float), 1e-300)
-    )
-    result["Term_without_ID"] = result["Term"].astype(str).str.replace(
-        r"\s*\(GO:\d+\)$", "", regex=True
-    )
-    return result
-
-
-def _integer_ratio_refs(values: pd.Series) -> np.ndarray:
-    pct = np.asarray(values, float) * 100
-    low, high = float(pct.min()), float(pct.max())
-    if np.isclose(low, high):
-        center = max(1, int(round(low)))
-        return np.array([max(1, center - 5), center, center + 5])
-    refs = np.rint(np.linspace(low, high, 3)).astype(int)
-    refs[0] = max(1, refs[0])
-    refs[1] = max(refs[0] + 1, refs[1])
-    refs[2] = max(refs[1] + 1, refs[2])
-    return refs
-
-
-def plot_enrichment(
-    selected: pd.DataFrame,
-    output_dir: str | Path,
-    filename: str,
-    title: str,
-    color: str,
-    ylabel: str,
-) -> None:
-    selected = selected.sort_values("minus_log10_padj").copy()
-    selected["Display_Term"] = selected["Term_without_ID"].map(
-        lambda value: textwrap.fill(value, width=36)
-    )
-    rmin, rmax = selected["Overlap_Ratio"].min(), selected["Overlap_Ratio"].max()
-
-    def size(values: Sequence[float]) -> np.ndarray:
-        values = np.asarray(values, float)
-        if np.isclose(rmin, rmax):
-            return np.full(values.shape, 120.0)
-        return 50 + (values - rmin) / (rmax - rmin) * 140
-
-    fig, ax = plt.subplots(figsize=(5.8, max(3.6, 0.48 * len(selected) + 1.25)))
-    y = np.arange(len(selected))
-    x = selected["minus_log10_padj"].to_numpy(float)
-    xleft = max(0.0, float(x.min()) - max(0.35, 0.06 * float(np.ptp(x))))
-    for yi, xi in zip(y, x):
-        ax.hlines(yi, xleft, xi, color="#D0D0D0", linestyle="--", linewidth=0.7, alpha=0.75)
-    ax.scatter(x, y, s=size(selected["Overlap_Ratio"]), c=color, alpha=0.9, edgecolors="white", linewidth=0.7)
-    refs = _integer_ratio_refs(selected["Overlap_Ratio"])
-    handles = [
-        ax.scatter([], [], s=float(size([value / 100])[0]), c=color, edgecolors="white", linewidth=0.7)
-        for value in refs
-    ]
-    ax.legend(handles, [f"{value}%" for value in refs], title="Overlap (%)", frameon=False, loc="center left", bbox_to_anchor=(1.01, 0.5))
-    ax.set_yticks(y, selected["Display_Term"])
-    ax.set_xlim(left=xleft)
-    ax.set_xlabel("−log10 adjusted P-value")
-    ax.set_ylabel(ylabel)
-    ax.set_title(title, fontsize=10, pad=8)
-    ax.tick_params(axis="y", labelsize=8, length=0)
-    ax.grid(False)
-    fig.tight_layout(pad=0.7)
-    save_png(output_dir, fig, filename)
-    plt.close(fig)
-
-
-def plot_spatial_gene_grid(
-    frames: Mapping[str, pd.DataFrame],
-    coords: Mapping[str, np.ndarray],
-    genes: Sequence[str],
-    output_dir: str | Path,
-    filename: str,
-) -> None:
-    fig, axes = plt.subplots(len(genes), 2, figsize=(8.8, 3.0 * len(genes)), constrained_layout=True)
-    for row, gene in enumerate(genes):
-        combined = np.concatenate([frames["MN1"][gene], frames["MN2"][gene]])
-        vmin, vmax = np.quantile(combined, [0.01, 0.99])
-        if np.isclose(vmin, vmax):
-            vmax = max(float(combined.max()), float(vmin) + 1)
-        for col, sample in enumerate(["MN1", "MN2"]):
-            ax = axes[row, col]
-            ax.scatter(coords[sample][:, 0], coords[sample][:, 1], c=frames[sample][gene], s=7.0, cmap="Spectral_r", vmin=vmin, vmax=vmax, linewidths=0)
-            ax.set_aspect("equal", adjustable="box")
-            ax.set_xticks([])
-            ax.set_yticks([])
-            for spine in ax.spines.values():
-                spine.set_visible(False)
-            if row == 0:
-                ax.set_title(sample, fontsize=10)
-            if col == 0:
-                ax.text(-0.08, 0.5, gene, transform=ax.transAxes, ha="right", va="center", fontsize=9)
-        scalar = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax), cmap="Spectral_r")
-        fig.colorbar(scalar, ax=axes[row, :], fraction=0.025, pad=0.02).ax.tick_params(labelsize=7)
-    save_png(output_dir, fig, filename)
-    plt.close(fig)
-
-
-def plot_box_grid(
-    frames: Mapping[str, pd.DataFrame],
-    genes: Sequence[str],
-    output_dir: str | Path,
-    filename: str,
-) -> None:
-    fig, axes = plt.subplots(1, 4, figsize=(12.8, 4.2), sharey=False)
-    for ax, gene in zip(axes, genes):
-        frame = pd.concat(
-            [pd.DataFrame({"sample": sample, "expression": frames[sample][gene].to_numpy()}) for sample in ["MN1", "MN2"]],
-            ignore_index=True,
-        )
-        sns.boxplot(data=frame, x="sample", y="expression", hue="sample", order=["MN1", "MN2"], palette={"MN1": "#AFC7E8", "MN2": "#E6B0AA"}, width=0.5, linewidth=2, showfliers=False, legend=False, ax=ax)
-        ax.set_title(gene, fontsize=9)
-        ax.set_xlabel("")
-        ax.set_ylabel("Log-normalized expression")
-    fig.tight_layout()
-    save_png(output_dir, fig, filename)
-    plt.close(fig)
-
-
 def rank_tertiles(score: pd.Series) -> pd.Series:
     order = np.argsort(score.to_numpy(float), kind="mergesort")
     labels = np.empty(len(score), dtype=object)
@@ -231,7 +33,6 @@ def rank_tertiles(score: pd.Series) -> pd.Series:
     labels[order[cut2:]] = "Relative CV-like"
     return pd.Series(labels, index=score.index, dtype="object")
 
-
 def clean_spatial_axis(ax: plt.Axes, title: str) -> None:
     ax.set_title(title, fontsize=8.5)
     ax.set_aspect("equal", adjustable="box")
@@ -239,7 +40,6 @@ def clean_spatial_axis(ax: plt.Axes, title: str) -> None:
     ax.set_yticks([])
     for spine in ax.spines.values():
         spine.set_visible(False)
-
 
 def common_spatial_limits(
     coords: Mapping[str, np.ndarray], samples: Sequence[str]
@@ -257,42 +57,70 @@ def common_spatial_limits(
     return limits, nn
 
 
-def symmetric_knn(coords: np.ndarray, k: int = 6) -> sparse.csr_matrix:
-    _, indices = cKDTree(coords).query(coords, k=min(k + 1, len(coords)))
-    rows = np.repeat(np.arange(len(coords)), indices.shape[1] - 1)
-    cols = indices[:, 1:].reshape(-1)
-    weights = sparse.csr_matrix((np.ones(len(rows)), (rows, cols)), shape=(len(coords), len(coords)))
-    weights = weights.maximum(weights.T)
-    weights.setdiag(0)
-    weights.eliminate_zeros()
-    return weights
-
-
-def moran_many(
-    matrix: np.ndarray,
-    weights: sparse.csr_matrix,
-    permutations: int = 999,
-    seed: int = 0,
-) -> tuple[np.ndarray, np.ndarray]:
-    matrix = np.asarray(matrix, float)
-    z = matrix - matrix.mean(axis=0, keepdims=True)
-    denominator = np.sum(z * z, axis=0)
-    factor = matrix.shape[0] / float(weights.sum())
-    observed = factor * np.sum(z * (weights @ z), axis=0) / denominator
-    rng = np.random.default_rng(seed)
-    exceed = np.zeros(matrix.shape[1], dtype=int)
-    for _ in range(permutations):
-        permuted = z[rng.permutation(matrix.shape[0]), :]
-        simulated = factor * np.sum(permuted * (weights @ permuted), axis=0) / denominator
-        exceed += np.abs(simulated) >= np.abs(observed)
-    return observed, (exceed + 1) / (permutations + 1)
-
-
-def output_inventory(output_dir: str | Path) -> pd.DataFrame:
+def prepare_output(output_dir):
+    """Create output folders without deleting existing files. / 建立目录，保留已有文件。"""
     output_dir = Path(output_dir)
-    observed = sorted(path.name for path in output_dir.glob("*.png"))
-    if observed != sorted(EXPECTED_OUTPUTS):
-        raise RuntimeError(f"Output mismatch: {observed}")
-    return pd.DataFrame(
-        [{"filename": name, "bytes": (output_dir / name).stat().st_size} for name in EXPECTED_OUTPUTS]
-    )
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "tables").mkdir(exist_ok=True)
+    return output_dir
+
+
+def save_panel(fig, output_dir, stem, *, tight=False, dpi=600):
+    """Export PNG/PDF and display a notebook preview. / 导出 PNG/PDF 并显示预览。"""
+    output_dir = Path(output_dir)
+    options = {"bbox_inches": "tight"} if tight else {}
+    fig.canvas.draw()
+    fig.savefig(output_dir / (stem + ".png"), dpi=dpi, facecolor="white", **options)
+    fig.savefig(output_dir / (stem + ".pdf"), dpi=350, facecolor="white", **options)
+    plt.show()
+    plt.close(fig)
+    return output_dir / (stem + ".png")
+
+
+def output_inventory(output_dir):
+    """Check every expected PNG and PDF. / 核对全部预期图件。"""
+    rows = []
+    for stem in EXPECTED_STEMS:
+        for extension in ("png", "pdf"):
+            path = Path(output_dir) / (stem + "." + extension)
+            if not path.is_file() or path.stat().st_size == 0:
+                raise FileNotFoundError(path)
+            rows.append({"file": path.name, "bytes": path.stat().st_size})
+    return pd.DataFrame(rows)
+
+
+def plot_gene_maps(frames, coords, genes, output_dir, stem):
+    """Two samples by four genes, with shared per-gene limits. / 两样本四基因共用色标。"""
+    fig, axes = plt.subplots(2, len(genes), figsize=(7.5, 3.7))
+    fig.subplots_adjust(left=.07, right=.96, bottom=.07, top=.91, hspace=.12, wspace=.17)
+    samples = ["MN1", "MN2"]
+    span = max(np.ptp(coords[s], axis=0).max() for s in samples) + 4
+    for col, gene in enumerate(genes):
+        lo, hi = np.quantile(np.r_[frames["MN1"][gene], frames["MN2"][gene]], [.01,.99])
+        if np.isclose(lo,hi): hi = max(float(max(frames[s][gene].max() for s in samples)), lo+1)
+        for row, sample in enumerate(samples):
+            ax=axes[row,col]; xy=coords[sample]; mid=(xy.min(0)+xy.max(0))/2
+            artist=ax.scatter(*xy.T,c=frames[sample][gene],s=3.2,linewidths=0,cmap="Spectral_r",vmin=lo,vmax=hi)
+            ax.set(xlim=(mid[0]-span/2,mid[0]+span/2),ylim=(mid[1]-span/2,mid[1]+span/2),aspect="equal")
+            ax.set_axis_off()
+            if row==0: ax.set_title(gene,fontstyle="italic",fontsize=9,pad=4)
+            if col==0: ax.text(-.08,.5,sample,transform=ax.transAxes,rotation=90,ha="center",va="center",fontsize=8)
+        box=axes[1,col].get_position()
+        cax=fig.add_axes([box.x1+.004,box.y0+.05,.006,.10])
+        bar=fig.colorbar(artist,cax=cax,ticks=[]);bar.outline.set_linewidth(.4)
+    save_panel(fig,output_dir,stem)
+
+
+def plot_gene_boxes(frames, genes, output_dir, stem):
+    """All spots; median/IQR and 1.5-IQR whiskers. / 全部spot，中位数、四分位数和1.5倍IQR须。"""
+    fig, axes=plt.subplots(1,len(genes),figsize=(7.5,2.3))
+    fig.subplots_adjust(left=.09,right=.98,top=.87,bottom=.21,wspace=.48)
+    for col,(ax,gene) in enumerate(zip(axes,genes)):
+        box=ax.boxplot([frames[s][gene] for s in ["MN1","MN2"]],patch_artist=True,widths=.5,showfliers=False,whis=1.5,
+                       medianprops={"color":"black","linewidth":.8},boxprops={"linewidth":.8},whiskerprops={"linewidth":.8},capprops={"linewidth":.8})
+        for patch,color in zip(box["boxes"],["#B5C8E0","#DDB3AE"]):patch.set_facecolor(color)
+        ax.set_xticks([1,2],["MN1","MN2"]);ax.spines[["top","right"]].set_visible(False)
+        ax.set_title(gene,fontstyle="italic",fontsize=9)
+        ax.tick_params(labelsize=8)
+        if col==0:ax.set_ylabel("Log-normalized expression",fontsize=8)
+    save_panel(fig,output_dir,stem)

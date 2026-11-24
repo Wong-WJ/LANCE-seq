@@ -1,0 +1,5 @@
+﻿final_panel,output_stem,source_notebook,content
+4F,Fig4F_Pseudobulk_PCA,LANCE-seq_Figure4.ipynb,Sample-level pseudobulk PCA
+4G,Fig4G_Five_Module_Heatmap,LANCE-seq_Figure4.ipynb + 4H.ipynb,Five final functional gene sets
+4H,Fig4H_Module_Gene_Changes,4H.ipynb,Gene-level changes in three sample contrasts
+4I,Fig4I_Gene_Difference_ECDF,4I.ipynb,Cumulative absolute differences across 44 genes

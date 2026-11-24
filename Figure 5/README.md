@@ -1,56 +1,59 @@
-# LANCE-seq Figure 5 analysis
+# LANCE-seq Figure 5
 
-## Files
+Reproduce final **Figure 5B–I and supplementary Figures S5–S9** as 19 PNG/PDF pairs.
 
-- `LANCE-seq_Figure5.ipynb` — complete Figure 5 analysis notebook.
-- `figure5_utils.py` — small reusable plotting and mathematical helpers; all core scientific calculations remain visible in the notebook.
-- `data/` — GO and KEGG enrichment tables used by the notebook.
-## Inputs
+## Files and run
 
-- AnnData path: set `INPUT_H5AD` in the configuration cell.
-- Local GO/KEGG table directory: set `ENRICHMENT_DIR` in the configuration cell.
-- Figure destination: set `OUTPUT_DIR` in the configuration cell.
+- `LANCE-seq_Figure5.ipynb`: full analysis with short Chinese/English explanations for every cell.
+- `figure5_utils.py`: reusable normalization, plotting and export helpers.
+- `data/`: frozen GO/KEGG mouse annotations and source checksums.
+- `panel_sources.csv`: final panel-to-source-notebook mapping.
+- `outputs/`: PNG/PDF files; `outputs/tables/`: numerical results, gene lists and enrichment tables.
 
-The h5ad must contain count-like `X`, `obs['batch']`, and `obsm['spatial']`.
+Place `LANCE8.h5ad` in `../data/`, then run `python run_figures.py --figure 5` from the repository root. Alternatively, run all notebook cells from this folder. All paths are relative, and no online enrichment service is needed. Tested packages are in `../requirements-figures45.txt`.
 
-## Run
+## Methods implemented
 
-Open `LANCE-seq_Figure5.ipynb`, restart the kernel, and run all cells from top to bottom. The notebook recreates the output directory and produces exactly the 18 PNG files listed below.
+- **5B:** aggregate all genes across spots per sample, compute CPM and `log2(CPM+1)`, then plot mean expression A and MN2−MN1 change M. Detected genes with A>1 and M>1 or M<−1 define the up/down sets. These are sample-level descriptive changes.
+- **5C/S5:** intersect the 5B-eligible genes with the frozen mouse annotations to define each database-specific background. Test terms of size 10–500 with a one-sided hypergeometric test; apply BH to all tested terms, including zero overlaps, separately by database and direction. Keep the final displayed term selections and a common bubble-area scale. Complete results, backgrounds, queries and displayed terms are saved as CSVs.
+- **5D/E, S6/S7 and 5I:** per-spot normalization to 10,000 followed by natural-log `log1p`; native spatial coordinates. Each gene uses common color limits across compared samples. S6 section maps share the MN1/MN2 color limits of 5D. Boxes show median, IQR and 1.5-IQR whiskers; outlier symbols are hidden.
+- **5F/S9:** four CV and four PV core genes. Microneedle scores use the equally weighted MN1/MN5 healthy reference, including within- and between-sample variance. Section scores use the CON3 mean/SD. The mean standardized core-gene expression defines each program score. Spatial colors use pooled 1st–99th percentiles.
+- **S8:** within-sample core-gene z scores, mean CV minus mean PV, stable rank tertiles, and five held-out marker medians/Spearman correlations in healthy samples.
+- **5G:** retain the revised depth, detection and mean-count matching procedure, including stochastic rounding of fractional values. Sample 30 APAP spots per depth stratum across 20 strata and match healthy spots with sufficient depth, for 300 draws. Retain the original two random streams (20261121 and 22061121). Plot median relative-expression profiles for held-out Glul, Cyp2e1 and Ass1 across within-sample tertiles. These draws resample spots within the specified captures.
+- **5H:** include genes detected in ≥10% of spots in both MN1 and MN2 with finite Moran statistics. Compare pooled `log2(CPM+1)` changes with global Moran's I changes calculated on per-spot log-normalized expression and symmetric binary 6-nearest-neighbor graphs. Retain all 11 final labels, including the original protein-coding selection rules for Abi1, Scd1 and Alb. Endpoint and spatial-weight/depth sensitivity checks are saved as tables.
 
-## Key methods
+MN1/MN2 is the same-mouse baseline/APAP 6 h pair. MN5/MN4 and CON3/CON2 are endpoint comparisons; microneedle and section measurements come from the corresponding healthy and APAP animals.
 
-- MN2 versus MN1 differential expression: Scanpy Wilcoxon on per-spot 10,000-count normalization followed by log1p; displayed thresholds are `|log2FC| > 1` and adjusted `P < 0.05`.
-- Relative zonation: within-sample gene z-scores; mean CV-core score minus mean PV-core score; stable rank tertiles define Relative PV-like, Intermediate, and Relative CV-like states.
-- Held-out validation: `Cyp2e1`, `Glul`, `Cyp7a1`, `Ass1`, and `Alb` are excluded from score construction and assessed by stratum medians and Spearman correlation.
-- Healthy-reference zonation programs: equally weighted MN1/MN5 healthy reference with both within-sample and between-sample variance.
-- Zone effects: sample×stratum count aggregation, CPM, `log2(CPM+1)`, and APAP−baseline differences without replicate-level inference.
-- Figure 5h modules: each gene is standardized with fixed MN1-spot mean and SD before module averaging in MN1/MN2.
-- Supportive concordance: Spearman comparison of MN1→MN2 effects with MN5→MN4 and CON3→CON2 effects.
-- Spatial autocorrelation: symmetric binary 6-nearest-neighbor weights, Global Moran’s I, 999 permutations, and within-sample BH-FDR.
+## Final panel mapping
 
-## Outputs and manuscript panels
+| Final panel | Output stem (`.png` / `.pdf`) | Content |
+|---|---|---|
+| Fig. 5B | `Fig5B_Longitudinal_MA` | Sample-level longitudinal MA plot |
+| Fig. 5C | `Fig5C_GO_Up` | Upregulated GO biological processes |
+| Fig. 5D | `Fig5D_Injury_Spatial` | Injury marker spatial expression |
+| Fig. 5E | `Fig5E_Injury_Distributions` | Injury marker spot distributions |
+| Fig. 5F | `Fig5F_CV_Reference_Spatial` | Healthy-reference CV program maps |
+| Fig. 5G | `Fig5G_Matched_Marker_Profiles` | Depth/detection/mean-matched marker profiles |
+| Fig. 5H | `Fig5H_Expression_Moran_Changes` | Expression changes versus Moran’s I changes |
+| Fig. 5I | `Fig5I_Focal_Gene_Spatial` | Ass1, Abi1 and Alb spatial expression |
+| Fig. S5A | `FigS5A_GO_Down` | Downregulated GO biological processes |
+| Fig. S5B | `FigS5B_KEGG_Up` | Upregulated KEGG pathways |
+| Fig. S5C | `FigS5C_KEGG_Down` | Downregulated KEGG pathways |
+| Fig. S6A–B | `FigS6_Section_Injury_Markers` | Section injury marker maps and distributions |
+| Fig. S7A | `FigS7A_Zonation_Marker_Spatial` | Zonation marker spatial expression |
+| Fig. S7B | `FigS7B_Zonation_Marker_Distributions` | Zonation marker spot distributions |
+| Fig. S8A | `FigS8A_Relative_Zonation_Spatial` | Within-sample relative zonation maps |
+| Fig. S8B | `FigS8B_Heldout_Validation` | Five held-out markers in healthy samples |
+| Fig. S9A | `FigS9A_CV_Reference_Distributions` | CV reference score distributions |
+| Fig. S9B | `FigS9B_PV_Reference_Distributions` | PV reference score distributions |
+| Fig. S9C | `FigS9C_PV_Reference_Spatial` | PV reference score maps |
 
-| Output file | Manuscript panel |
-|---|---|
-| `Fig5B_MN2_vs_MN1_Volcano.png` | Fig. 5b |
-| `Fig5C1_GO_Up.png` | Fig. 5c |
-| `Fig5D_APAP_Injury_Gene_Spatial_Maps_fixed.png` | Fig. 5d |
-| `FigS5B_APAP_Marker_Expression_Distribution_fixed.png` | Fig. 5e |
-| `Fig5F_Relative_Zonation_3State_Spatial_Maps_fixed.png` | Fig. 5f |
-| `Fig5G_ZoneStratified_Transcriptional_Effect_Sizes.png` | Fig. 5g |
-| `Fig5H_APAP_Module_Response_Across_Relative_Zonation_Strata.png` | Fig. 5h |
-| `Fig5C2_GO_Down.png` | Supplementary Fig. 5a |
-| `FigS5A1_KEGG_Up.png` | Supplementary Fig. 5b |
-| `FigS5A2_KEGG_Down.png` | Supplementary Fig. 5c |
-| `Fig5E_Liver_Zonation_Marker_Spatial_Maps.png` | Extended Data Fig. 1a |
-| `FigS5C_Zonation_Marker_Expression_Distribution.png` | Extended Data Fig. 1b |
-| `FigS5D_Relative_Zonation_Continuous_Spatial_Maps_fixed.png` | Extended Data Fig. 2a |
-| `FigS5E_Healthy_HeldOut_Zonation_Validation.png` | Extended Data Fig. 2b |
-| `FigS5G_HealthyReference_Absolute_Zonation_Program_Remodeling.png` | Extended Data Fig. 3a,b |
-| `FigS5H_Absolute_CV_Associated_Program_Spatial_Maps.png` | Extended Data Fig. 3c |
-| `FigS5J_Spatial_Autocorrelation_MoransI.png` | Supplementary Fig. 6 |
-| `FigS5I_ZoneStratified_Supportive_Concordance.png` | Supplementary Fig. 7 |
+Figure 5A is the experiment schematic. Final supplementary Figure S10 contains cluster maps and is outside this notebook's scope. Output names use the final figure numbering.
 
-## Dependencies
+## Annotation provenance
 
-Python 3.10, scanpy 1.11.5, anndata 0.11.4, NumPy 2.2.6, pandas 2.3.3, SciPy 1.15.3, matplotlib 3.10.8, seaborn 0.13.2, statsmodels, and Jupyter/nbformat.
+`data/GO_mouse_annotation.json.gz` contains the exact GO Biological Process snapshot used in the revised figures (MSigDB M5, 2026.2.Mm). `data/KEGG_mouse_annotation.json.gz` contains the corresponding KEGG mouse snapshot retrieved on 2026-11-20. `annotation_sources.json` records original source URLs and checksums. The notebook validates the uncompressed snapshot checksum before use. These snapshots replace the old cached enrichment-result CSVs.
+
+## 中文说明
+
+本notebook按最终版生成图5 B–I及补充图S5–S9。原“新S9”中的CV空间图对应图5F，“S5.5”对应补充图S6，“S9-1”对应补充图S9C。图5B/G/H/I采用修改后的计算，保留随机种子、抽样次数、阈值和基因筛选。运行输出19组PNG/PDF，以及完整富集结果、查询基因、背景基因、重采样和空间统计CSV。最终补充图S10是聚类图，不使用修改目录中的旧同名自相关柱状图。

@@ -1,0 +1,21 @@
+{
+  "GO": {
+    "format": "base64-gzip-json: term identifier -> [term name, mouse gene symbols]",
+    "sha256": "71dc635c47f37a5d437bdd765c05ce3d548c2bac60f35c399284c828a07b51a7",
+    "sources": {
+      "https://data.broadinstitute.org/gsea-msigdb/msigdb/release/2026.2.Mm/m5.go.bp.v2026.2.Mm.symbols.gmt": "9f81390893bed8e0ad838c1c0cac8f27ff71583c99b73cc9277ab31b94fea73e"
+    },
+    "file": "GO_mouse_annotation.json.gz"
+  },
+  "KEGG": {
+    "format": "base64-gzip-json: term identifier -> [term name, mouse gene symbols]",
+    "sha256": "71f8b28e5f120f2f05185b1ead75e79e05b73dc85e8d28e8e8dbbec90a33e096",
+    "sources": {
+      "https://rest.kegg.jp/list/mmu": "5faab57edd581f4585a5c06e31f64bebbff52391e9c5cf080f4dfabb3af07ee3",
+      "https://rest.kegg.jp/list/pathway/mmu": "41e385f1658be658f4f9205f816e03a105380dc7303356dfe39b754b9c2bec54",
+      "https://rest.kegg.jp/link/pathway/mmu": "4bcfb2c75cf5bfc29be3c44be423158314b11393784b586834acf8aac307d2d3",
+      "https://rest.kegg.jp/info/pathway": "ffab787b692ca6c5c354046cd2a32ac2ac330aa882b774898ec126e9059a9d65"
+    },
+    "file": "KEGG_mouse_annotation.json.gz"
+  }
+}

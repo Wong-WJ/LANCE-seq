@@ -1,0 +1,20 @@
+﻿final_panel,output_stem,source_notebook,content
+5B,Fig5B_Longitudinal_MA,5B.ipynb,Sample-level longitudinal MA plot
+5C,Fig5C_GO_Up,GO_Up.ipynb,Upregulated GO biological processes
+5D,Fig5D_Injury_Spatial,LANCE-seq_Figure5.ipynb,Injury marker spatial expression
+5E,Fig5E_Injury_Distributions,LANCE-seq_Figure5.ipynb,Injury marker spot distributions
+5F,Fig5F_CV_Reference_Spatial,新S9.ipynb / S9-1.ipynb,Healthy-reference CV program maps
+5G,Fig5G_Matched_Marker_Profiles,新5G.ipynb,Depth/detection/mean-matched marker profiles
+5H,Fig5H_Expression_Moran_Changes,5H.ipynb,Expression changes versus Moran’s I changes
+5I,Fig5I_Focal_Gene_Spatial,5I.ipynb,"Ass1, Abi1 and Alb spatial expression"
+S5A,FigS5A_GO_Down,GO_Down.ipynb,Downregulated GO biological processes
+S5B,FigS5B_KEGG_Up,KEGG_Up.ipynb,Upregulated KEGG pathways
+S5C,FigS5C_KEGG_Down,KEGG_Down.ipynb,Downregulated KEGG pathways
+S6A–B,FigS6_Section_Injury_Markers,S5.5.ipynb,Section injury marker maps and distributions
+S7A,FigS7A_Zonation_Marker_Spatial,LANCE-seq_Figure5.ipynb,Zonation marker spatial expression
+S7B,FigS7B_Zonation_Marker_Distributions,LANCE-seq_Figure5.ipynb,Zonation marker spot distributions
+S8A,FigS8A_Relative_Zonation_Spatial,LANCE-seq_Figure5.ipynb,Within-sample relative zonation maps
+S8B,FigS8B_Heldout_Validation,LANCE-seq_Figure5.ipynb,Five held-out markers in healthy samples
+S9A,FigS9A_CV_Reference_Distributions,新S9.ipynb,CV reference score distributions
+S9B,FigS9B_PV_Reference_Distributions,新S9.ipynb,PV reference score distributions
+S9C,FigS9C_PV_Reference_Spatial,S9-1.ipynb,PV reference score maps
